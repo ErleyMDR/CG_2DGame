@@ -16,9 +16,10 @@ class Game:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         self.clock = pg.time.Clock()
         self.running = True
+        pg.display.set_caption(self.__repr__())
 
     def __repr__(self):
-        return "RTCB - Real Time Card Battle. Made by Erley Monteiro"
+        return "RTCB - Real Time Card Battle"
 
     def run(self):
         own = True
