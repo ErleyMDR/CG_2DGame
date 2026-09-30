@@ -1,15 +1,15 @@
 from argparse import ArgumentError
 
 import pygame as pg
+import math
 
-from engine.line import Line
+SQRTOF3: float | int = math.sqrt(3)
 
 def set_pixel(surface: pg.Surface, x: int, y: int, cor: tuple[int,int,int]) -> None:
     if 0 <= x < surface.get_width() and 0 <= y < surface.get_height():
         surface.set_at((x, y), cor)
 
-def line(surface: pg.Surface, /, start_point: tuple[int,int], end_point: tuple[int,int], color: tuple[int,int,int], width: int=1, method: str='bresenham') -> Line:
-    l = Line(start_point, end_point, raster=False)
+def line(surface: pg.Surface, /, start_point: tuple[int,int], end_point: tuple[int,int], color: tuple[int,int,int], width: int=1, method: str='bresenham'):
     def _dda(x0: int, y0: int, x1: int, y1: int):
         dx = x1 - x0
         dy = y1 - y0
@@ -24,7 +24,6 @@ def line(surface: pg.Surface, /, start_point: tuple[int,int], end_point: tuple[i
         while i <= step:
             px, py = round(x), round(y)
             set_pixel(surface, px, py, color)
-            l.cache.append((px, py))
             x += dx
             y += dy
             i += 1
@@ -78,9 +77,8 @@ def line(surface: pg.Surface, /, start_point: tuple[int,int], end_point: tuple[i
         case _:
             raise NotImplementedError
 
-    return l
 
-def polygon(surface: pg.Surface, /, points: list[tuple[int,int]], color: tuple[int,int,int]) -> None:
+def polygon(surface: pg.Surface, /, points: list[tuple[int,int]], color: tuple[int,int,int], fill: bool=False) -> None:
     n = len(points)
     if n <= 2:
         raise ArgumentError
@@ -89,6 +87,109 @@ def polygon(surface: pg.Surface, /, points: list[tuple[int,int]], color: tuple[i
         x0, y0 = points[i]
         x1, y1 = points[(i + 1) % n]
         line(surface, (x0, y0), (x1, y1), color, method='bresenham')
+
+    if fill:
+        scanline_fill(surface, points=points, color=color)
+
+def curved_line(surface: pg.Surface, /, start_point: tuple[int,int], end_point: tuple[int,int], color: tuple[int,int,int]) -> None:
+    ...
+
+def circle(surface: pg.Surface, center, radius, color):
+    a, b = center
+    p = 1 - radius
+
+    dx = 0
+    dy = radius
+    while dx <= dy:
+        points = [
+            (a + dx, b + dy),
+            (a - dx, b + dy),
+            (a + dx, b - dy),
+            (a - dx, b - dy),
+            (a + dy, b + dx),
+            (a - dy, b + dx),
+            (a + dy, b - dx),
+            (a - dy, b - dx)
+        ]
+
+        for point in points:
+            set_pixel(surface, point[0], point[1], color)
+
+        dx += 1
+        if p < 0:
+            p += 2 * dx - 1
+        else:
+            dy -= 1
+            p += 2 * (dx - dy) - 1
+
+def ellipse(surface: pg.Surface, /, center: tuple[int,int], x_radius: int, y_radius: int, color: tuple[int,int,int]) -> None:
+    cx, cy = center
+
+    rx2 = x_radius * x_radius
+    ry2 = y_radius * y_radius
+
+    x = 0
+    y = y_radius
+
+    dx = 2 * ry2 * x
+    dy = 2 * rx2 * y
+
+    # Região 1
+    p1 = ry2 - rx2 * y_radius + 0.25 * rx2
+
+    while dx < dy:
+        # Quatro pontos simétricos
+        set_pixel(surface, cx + x, cy + y, color)
+        set_pixel(surface, cx - x, cy + y, color)
+        set_pixel(surface, cx + x, cy - y, color)
+        set_pixel(surface, cx - x, cy - y, color)
+
+        x += 1
+        dx += 2 * ry2
+
+        if p1 < 0:
+            p1 += dx + ry2
+        else:
+            y -= 1
+            dy -= 2 * rx2
+            p1 += dx - dy + ry2
+
+    # Região 2
+    p2 = (
+            ry2 * (x + 0.5) ** 2
+            + rx2 * (y - 1) ** 2
+            - rx2 * ry2
+    )
+
+    while y >= 0:
+        # Quatro pontos simétricos
+        set_pixel(surface, cx + x, cy + y, color)
+        set_pixel(surface, cx - x, cy + y, color)
+        set_pixel(surface, cx + x, cy - y, color)
+        set_pixel(surface, cx - x, cy - y, color)
+
+        y -= 1
+        dy -= 2 * rx2
+
+        if p2 > 0:
+            p2 += rx2 - dy
+        else:
+            x += 1
+            dx += 2 * ry2
+            p2 += dx - dy + rx2
+
+
+def square(surface: pg.Surface, center, size, color):
+    h = size // 2
+    v = [(center[0] - h, center[1] - h),
+         (center[0] + h, center[1] - h),
+         (center[0] + h, center[1] + h),
+         (center[0] - h, center[1] + h)
+         ]
+
+    polygon(surface, v, color)
+
+    return v
 
 def flood_fill(surface: pg.Surface, x: int, y: int, /, fill_color: tuple[int,int,int], boundary_color: tuple[int,int,int]) -> None:
     height, width = surface.get_height(), surface.get_width()
@@ -154,3 +255,105 @@ def scanline_fill(surface: pg.Surface, /, points: list[tuple[int,int]], color: t
 
                 for x in range(x_inicio, x_fim + 1):
                     set_pixel(surface, x, y, color)
+
+
+def interpolate_color(color1, color2, t):
+    r = int(color1[0] + (color2[0] - color1[0]) * t)
+    g = int(color1[1] + (color2[1] - color1[1]) * t)
+    b = int(color1[2] + (color2[2] - color1[2]) * t)
+
+    r = max(0, min(r, 255))
+    g = max(0, min(g, 255))
+    b = max(0, min(b, 255))
+
+    return r, g, b
+
+def scanline_fill_gradiente(surface: pg.Surface, /, points, colors):
+    # Encontra Y mínimo e máximo
+    ys = [p[1] for p in points]
+    y_min = min(ys)
+    y_max = max(ys)
+
+    n = len(points)
+
+    for y in range(y_min, y_max):
+        intersecoes_x = []
+
+        for i in range(n):
+            x0, y0 = points[i]
+            x1, y1 = points[(i + 1) % n]
+
+            c0 = colors[i]
+            c1 = colors[(i + 1) % n]
+
+            # Ignora arestas horizontais
+            if y0 == y1:
+                continue
+
+            # Garante y0 < y1
+            if y0 > y1:
+                x0, y0, x1, y1 = x1, y1, x0, y0
+                c0, c1 = c1, c0
+
+            # Regra Ymin ≤ y < Ymax
+            if y < y0 or y >= y1:
+                continue
+
+            t = (y - y0) / (y1 - y0)
+
+            # Calcula interseção e cor
+            x = x0 + t * (x1 - x0)
+            cor_y = interpolate_color(c0, c1, t)
+            intersecoes_x.append((x, cor_y))
+
+        # Ordena interseções
+        intersecoes_x.sort(key=lambda p: p[0])
+
+        # Preenche entre pares
+        for i in range(0, len(intersecoes_x), 2):
+            if i + 1 < len(intersecoes_x):
+                x_ini, cor_ini = intersecoes_x[i]
+                x_fim, cor_fim = intersecoes_x[i + 1]
+
+                if x_fim == x_ini:
+                    continue
+
+                for x in range(int(x_ini), int(x_fim) + 1):
+                    t = (x - x_ini) / (x_fim - x_ini)
+                    cor = interpolate_color(cor_ini, cor_fim, t)
+                    set_pixel(surface, x, y, cor)
+
+def fill_circle_gradient(surface: pg.Surface, center, radius, color1, color2):
+    cx, cy = center
+
+    for y in range(cy - radius, cy + radius + 1):
+        dy = y - cy
+
+        dx = math.sqrt(radius ** 2 - dy ** 2)
+
+        x1 = round(cx - dx)
+        x2 = round(cx + dx)
+
+        for x in range(x1, x2 + 1):
+            # posição relativa do pixel dentro da scanline
+            t = (x - x1) / (x2 - x1)
+
+            color = interpolate_color(color1, color2, t)
+
+            set_pixel(surface, x, y, color)
+
+def triangle(surface: pg.Surface, center, height, side_l, color):
+    if (side_l * 2) / SQRTOF3 < height:
+        raise ArgumentError
+
+    hh = height // 2
+    hs = side_l // 2
+    v = [
+        (center[0], center[1] - hh),
+        (center[0] - hs, center[1] + hh),
+        (center[0] + hs, center[1] + hh),
+    ]
+
+    polygon(surface, v, color)
+
+    return v
