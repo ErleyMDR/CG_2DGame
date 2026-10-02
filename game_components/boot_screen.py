@@ -1,0 +1,3 @@
+def draw_boot_screen():
+    ...
+
