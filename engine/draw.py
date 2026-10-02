@@ -12,6 +12,15 @@ def set_pixel(surface: pg.Surface, x: int, y: int, cor: tuple[int,int,int]) -> N
     if 0 <= x < surface.get_width() and 0 <= y < surface.get_height():
         surface.set_at((x, y), cor)
 
+def get_pixel(surface: pg.Surface, x: int, y: int) -> tuple[int, int, int] | None:
+    x = int(x)
+    y = int(y)
+
+    if 0 <= x < surface.get_width() and 0 <= y < surface.get_height():
+        c = surface.get_at((x, y))
+        return c.r, c.g, c.b
+    return None
+
 class Rasterizer:
 
     @staticmethod
@@ -100,7 +109,7 @@ class Rasterizer:
     @staticmethod
     def curved_line(surface: pg.Surface, /, start_point: tuple[int,int], end_point: tuple[int,int], color: tuple[int,int,int]) -> None:
         ...
-    
+
     @staticmethod
     def circle(surface: pg.Surface, center, radius, color, *, fill: bool=False):
         a, b = center

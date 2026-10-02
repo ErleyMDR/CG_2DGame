@@ -1,4 +1,4 @@
-from cards import Deck
+from game_components.cards import Deck
 
 class Player:
     def __init__(self, hp, dmg_s, def_s, deck):

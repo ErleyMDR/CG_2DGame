@@ -3,6 +3,7 @@ import pygame as pg
 from engine import draw
 from game_components.hud import Hud
 from game_components.entities import *
+from menu import Menu
 
 WIDTH: int = 1820
 HEIGHT: int = 920
@@ -25,6 +26,9 @@ class Game:
         self.running = True
         self.font = pg.font.SysFont(FONT, FONT_SIZE)
         pg.display.set_caption(self.__repr__())
+
+        # Estado do Jogo
+        self.state = "MENU"
 
         self.is_debug_mode = False
         self.hud = Hud()
@@ -52,6 +56,9 @@ class Game:
 
     def run(self):
         while self.running:
+            if self.state == "MENU":
+                Menu.show(self.screen)
+
             # poll for events
             # pygame.QUIT event means the user clicked X to close your window
             for event in pg.event.get():
