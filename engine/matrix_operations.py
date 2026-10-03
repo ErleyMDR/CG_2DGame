@@ -38,3 +38,30 @@ def mat_mult(a, b):
                 result[i][j] += a[i][k] * b[k][j]
 
     return result
+
+
+def aplica_transformacao(m, pontos):
+
+    novos = []
+
+    for x, y in pontos:
+
+        v = [x, y, 1]
+
+        x_novo = (
+                m[0][0] * v[0]
+                + m[0][1] * v[1]
+                + m[0][2]
+        )
+
+        y_novo = (
+                m[1][0] * v[0]
+                + m[1][1] * v[1]
+                + m[1][2]
+        )
+
+        novos.append(
+            (x_novo, y_novo)
+        )
+
+    return novos
