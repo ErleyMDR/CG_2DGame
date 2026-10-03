@@ -5,6 +5,7 @@ from game_components.hud import Hud
 from game_components.entities import *
 from menu import Menu
 
+FPS: int = 60
 WIDTH: int = 1820
 HEIGHT: int = 920
 FONT: str = 'Serif'
@@ -28,12 +29,12 @@ class Game:
         pg.display.set_caption(self.__repr__())
 
         # Estado do Jogo
-        self.state = "MENU"
+        self.state = "TEST"
 
-        self.is_debug_mode = False
-        self.hud = Hud()
+        self.is_debug_mode = True
         self.player = None
         self.enemy = None
+        self.hud = Hud(self.player, self.enemy)
 
     def __repr__(self):
         return "RTCB - Real Time Card Battle"
@@ -59,6 +60,15 @@ class Game:
             if self.state == "MENU":
                 Menu.show(self.screen)
 
+            elif self.state == "PLAYING":
+                pass
+
+            elif self.state == "GAME_OVER":
+                pass
+
+            elif self.state == "CONTROLS":
+                pass
+
             # poll for events
             # pygame.QUIT event means the user clicked X to close your window
             for event in pg.event.get():
@@ -73,7 +83,7 @@ class Game:
             self.screen.fill(BLACK)
 
             # RENDER YOUR GAME HERE
-
+            self.hud.draw(self.screen)
             # draw.half_ellipse(self.screen, (WIDTH//2, HEIGHT//2),200, 150, WHITE, direction='east')
             # Calls debug_mode() if active
             if self.is_debug_mode: self.debug_mode()
@@ -81,6 +91,6 @@ class Game:
             # flip() the display to put your work on screen
             pg.display.flip()
 
-            self.clock.tick(60)  # limits FPS to 60
+            self.clock.tick(FPS)  # limits FPS to 60
 
         pg.quit()

@@ -20,7 +20,7 @@ class Player:
 
     def stack_card(self):
         c = self.deck.current.card
-        if c is not None:
+        if c is not None and len(self.stack) < 3:
             self.stack.append(c)
 
 class Enemy:
