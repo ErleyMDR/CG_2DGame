@@ -1,9 +1,11 @@
 import pygame as pg
 
+
 from engine import draw
 from game_components.hud import Hud
 from game_components.entities import *
 from menu import Menu
+from game_components.scenario import Scenario
 
 FPS: int = 60
 WIDTH: int = 1820
@@ -34,7 +36,8 @@ class Game:
         self.is_debug_mode = True
         self.player = None
         self.enemy = None
-        self.hud = Hud(self.player, self.enemy)
+        # self.hud = Hud(self.player, self.enemy)
+        self.scenario = Scenario()
 
     def __repr__(self):
         return "RTCB - Real Time Card Battle"
@@ -83,7 +86,8 @@ class Game:
             self.screen.fill(BLACK)
 
             # RENDER YOUR GAME HERE
-            self.hud.draw(self.screen)
+            self.scenario.draw(self.screen)
+            # self.hud.draw(self.screen)
             # draw.half_ellipse(self.screen, (WIDTH//2, HEIGHT//2),200, 150, WHITE, direction='east')
             # Calls debug_mode() if active
             if self.is_debug_mode: self.debug_mode()
