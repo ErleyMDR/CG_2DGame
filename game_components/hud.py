@@ -1,6 +1,8 @@
 import engine.draw as draw
 import pygame as pg
 
+from game_components.cards import Deck
+
 # =============================
 # DIMENSIONS & COORDINATES
 # =============================
@@ -47,8 +49,7 @@ class Hud:
         draw.Painter.scanline_fill(s, p2, color=GRAY_BORDER)
 
         draw.Rasterizer.line(s, (10, cy), (s.get_width()-10, cy), color=GRAY_BORDER)
-
-        self.player.deck
+        self.player.deck.draw_visible(s, (cx, cy - 10))
         return s
 
     def draw_hpbar(self) -> pg.Surface:

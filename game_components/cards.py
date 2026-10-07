@@ -5,77 +5,158 @@ from typing import override
 
 from engine import draw
 
+BLACK = (0, 0, 0)
+CARD_FONT: str = "assets/font/PressStart2P-Regular.ttf"
+CARD_FONT_SIZE:int = 80
+card_font = pg.font.Font(CARD_FONT, CARD_FONT_SIZE)
+
 CARD_SIZE = (50, 100)
-colors = {
-    'red': (255, 0, 0),
-    'green': (0, 255, 0),
-    'blue': (0, 0, 255)
-}
+TEXTURE_SIZE = (372, 670)
+w, h = TEXTURE_SIZE[0]//2, TEXTURE_SIZE[1]//2
 
-sprites = {
-    "AttackCard": {"front": "assets/ATTACK_CARD.png", "back": "assets/ATTACK_CARD_BACK_VIEW.png"},
-    "MagicCard": {
-        "front": {"Fire": "assets/FIRE_MAGIC_CARD.png",
-                 "Thunder": "assets/THUNDER_MAGIC_CARD.png",
-                 "Ice": "assets/ICE_MAGIC_CARD.png"},
-        "back": "assets/MAGIC_CARD_BACK_VIEW.png"
+TEXTURE_CUT = 20
+
+def _rasterize_texture(texture: pg.Surface) -> pg.Surface:
+    card_w, card_h = CARD_SIZE
+    tex_w, tex_h = texture.get_size()
+
+    cx = card_w // 2
+    cy = card_h // 2
+
+    # Converte o corte da textura para o tamanho da carta
+    cut_x = card_w * TEXTURE_CUT / tex_w
+    cut_y = card_h * TEXTURE_CUT / tex_h
+
+    card_p = [
+        (cx - card_w/2 + cut_x, cy - card_h/2),
+        (cx + card_w/2 - cut_x, cy - card_h/2),
+
+        (cx + card_w/2, cy - card_h/2 + cut_y),
+        (cx + card_w/2, cy + card_h/2 - cut_y),
+
+        (cx + card_w/2 - cut_x, cy + card_h/2),
+        (cx - card_w/2 + cut_x, cy + card_h/2),
+
+        (cx - card_w/2, cy + card_h/2 - cut_y),
+        (cx - card_w/2, cy - card_h/2 + cut_y),
+    ]
+
+    uvs = [
+        (TEXTURE_CUT / tex_w, 0.01),
+        ((tex_w - TEXTURE_CUT) / tex_w, 0.01),
+
+        (0.99, TEXTURE_CUT / tex_h),
+        (0.99, (tex_h - TEXTURE_CUT) / tex_h),
+
+        ((tex_w - TEXTURE_CUT) / tex_w, 0.99),
+        (TEXTURE_CUT / tex_w, 0.99),
+
+        (0.01, (tex_h - TEXTURE_CUT) / tex_h),
+        (0.01, TEXTURE_CUT / tex_h),
+    ]
+
+    surface = pg.Surface(CARD_SIZE)
+
+    draw.Painter.scanline_texture(
+        surface,
+        card_p,
+        uvs,
+        texture
+    )
+
+    return surface
+
+textures = {
+    "AttackCard": {
+        "front": pg.image.load("assets/textures/ATTACK_CARD.jpeg").convert_alpha(),
+        "back": pg.image.load("assets/textures/ATTACK_CARD_BACK_VIEW.png").convert_alpha()
     },
-    "DefenseCard": {"front": "assets/GREEN_CARD.png", "back": "assets/GREEN_CARD_BACK_VIEW.png"}
+    "MagicCard": {
+        "front": {
+            "Fire": pg.image.load("assets/textures/FIRE_MAGIC_CARD.png").convert_alpha(),
+            "Thunder": pg.image.load("assets/textures/THUNDER_MAGIC_CARD.png").convert_alpha(),
+            "Ice": pg.image.load("assets/textures/ICE_MAGIC_CARD.png").convert_alpha()
+        },
+        "back": pg.image.load("assets/textures/MAGIC_CARD_BACK_VIEW.png").convert_alpha()
+    },
+    "DefenseCard": {
+        "front": pg.image.load("assets/textures/GREEN_CARD.png").convert_alpha(),
+        "back": pg.image.load("assets/textures/GREEN_CARD_BACK_VIEW.png").convert_alpha()
+    }
 }
 
-range_types = {
-    "straight_line": draw.Rasterizer.rectangle,
-    "reuleaux": draw.Rasterizer.reuleaux_triangle
-}
+def _rasterize_cards_textures():
+    rasterized = {}
+    for card_type, card_data in textures.items():
+        rasterized[card_type] = {}
+
+        for side, texture in card_data.items():
+            if isinstance(texture, dict):
+                rasterized[card_type][side] = {}
+
+                for name, tex in texture.items():
+                    rasterized[card_type][side][name] = \
+                        _rasterize_texture(tex)
+            else:
+                rasterized[card_type][side] = \
+                    _rasterize_texture(texture)
+
+    return rasterized
+
+rasterized = _rasterize_cards_textures()
 
 class Card(ABC):
     def __init__(
             self,
             color: str,
-            value: int,
-            range_type: str | None
+            value: int
     ) -> None:
         self.color = color
         self.value = value
-        self.range_type = range_type
-        self.surface = self.rasterize()
+        self.active = False
+        self.play_order = -1
+
+        if isinstance(self, MagicCard):
+            self.front_surface = rasterized["MagicCard"]["front"][self.magic]
+        else:
+            self.front_surface = rasterized[self.__class__.__name__]["front"]
+        self.back_surface = rasterized[self.__class__.__name__]["back"]
 
     @abstractmethod
     def play(self): ...
 
-    def rasterize(self) -> pg.Surface:
-        s = pg.Surface(CARD_SIZE)
-        cx, cy = s.get_width()//2, s.get_height()//2
-
-        draw.Rasterizer.rectangle(s, (cx, cy), CARD_SIZE[0], CARD_SIZE[1], colors[self.color])
-        return s
-
-    def draw(self, screen: pg.Surface, pos: tuple[int,int]) -> None:
-        screen.blit(self.surface, pos)
-
+    def draw(self, screen: pg.Surface, pos: tuple[int,int], view: str="front") -> None:
+        s = self.front_surface if view == "front" else self.back_surface
+        number = card_font.render('9', True, BLACK)
+        s.blit(number, (w//2 - 30, h - 130))
+        screen.blit(s, pos)
 
 class AttackCard(Card, ABC):
     def __init__(
             self,
-            value: int,
+            value: int
     ) -> None:
         super().__init__('red', value)
         self.att_dmg = 10
 
     @override
-    def play(self): ...
+    def play(self):
+        pass
 
 
 class MagicCard(Card, ABC):
     def __init__(
             self,
             value: int,
-            range_type: str
+            magic
     ) -> None:
-        super().__init__('blue', value, range_type)
+        self.magic = magic
+        super().__init__('blue', value)
+        self.mg_dmg = 15
 
     @override
-    def play(self): ...
+    def play(self):
+        pass
 
 
 class DefenseCard(Card, ABC):
@@ -86,17 +167,17 @@ class DefenseCard(Card, ABC):
         super().__init__('green', value)
 
     @override
-    def play(self): ...
+    def play(self):
+        pass
 
 
 class CombinationCard(Card, ABC):
     def __init__(
             self,
             color: str,
-            value: int,
-            range_type: str | None
+            value: int
     ) -> None:
-        super().__init__(color, value, range_type)
+        super().__init__(color, value)
 
     @override
     def play(self): ...
@@ -128,6 +209,8 @@ def _construct_circular_list(cards: list[Card]) -> DeckNode:
 
 
 class Deck:
+    CARD_SPACING = 60
+
     def __init__(self, cards: list[Card]) -> None:
         self.cards = cards
         self.current = _construct_circular_list(cards)
@@ -144,13 +227,49 @@ class Deck:
         self.current = self.current.prev_card
 
     def remove_current(self) -> None:
-        next = self.current.next_card
-        prev = self.current.prev_card
-        next.prev_card = prev
-        prev.next_card = next
-        self.current = next
+        if self.total_cards > 1:
+            next = self.current.next_card
+            prev = self.current.prev_card
+            next.prev_card = prev
+            prev.next_card = next
+            self.current = next
 
-        self.total_cards -= 1
+            self.total_cards -= 1
+        else:
+            self.current = None
+            self.total_cards = 0
 
-    def draw_visible(self, screen: pg.Surface) -> pg.Surface:
-        ...
+    def draw_visible(
+            self,
+            screen: pg.Surface,
+            center: tuple[int, int]
+    ) -> None:
+
+        cx, cy = center
+
+        half_w = CARD_SIZE[0] // 2
+        half_h = CARD_SIZE[1] // 2
+
+        positions = [
+            (cx - self.CARD_SPACING - half_w, cy - half_h),
+            (cx - half_w,                    cy - half_h),
+            (cx + self.CARD_SPACING - half_w, cy - half_h)
+        ]
+
+        if self.current.prev_card is not None:
+            self.current.prev_card.card.draw(
+                screen,
+                positions[0]
+            )
+
+        if self.current is not None:
+            self.current.card.draw(
+                screen,
+                positions[1]
+            )
+
+        if self.current.next_card is not None:
+            self.current.next_card.card.draw(
+                screen,
+                positions[2]
+            )

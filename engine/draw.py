@@ -57,6 +57,8 @@ class Rasterizer:
         else:
             draw_polygon(surface, points=v, color=color)
 
+        return v
+
     @staticmethod
     def square(surface: pg.Surface, center, size, color, *, fill: bool=False):
        return Rasterizer.rectangle(surface, center, size, size, color, fill=fill)
@@ -355,4 +357,59 @@ class Painter:
                 set_pixel(surface, x, y, color)
 
     @staticmethod
-    def scanline_texture(surface: pg.Surface, /, points, texture_img): ...
+    def scanline_texture(surface: pg.Surface, /, points, uvs, texture_img):
+        n = len(points)
+        tex_w = texture_img.get_width()
+        tex_h = texture_img.get_height()
+        ys = [p[1] for p in points]
+        y_min = int(min(ys))
+        y_max = int(max(ys))
+
+        for y in range(y_min, y_max):
+            intersecoes = []
+
+            for i in range(n):
+                x0, y0 = points[i]
+                x1, y1 = points[(i + 1) % n]
+                u0, v0 = uvs[i]
+                u1, v1 = uvs[(i + 1) % n]
+
+                if y0 == y1:
+                    continue
+
+                if y0 > y1:
+                    x0, y0, x1, y1 = x1, y1, x0, y0
+                    u0, v0, u1, v1 = u1, v1, u0, v0
+
+                if y < y0 or y >= y1:
+                    continue
+
+                t = (y - y0) / (y1 - y0)
+                x = x0 + t * (x1 - x0)
+                u = u0 + t * (u1 - u0)
+                v = v0 + t * (v1 - v0)
+                intersecoes.append((x, u, v))
+
+            intersecoes.sort(key=lambda item: item[0])
+
+            for i in range(0, len(intersecoes), 2):
+                if i + 1 >= len(intersecoes):
+                    continue
+
+                x_ini, u_ini, v_ini = intersecoes[i]
+                x_fim, u_fim, v_fim = intersecoes[i + 1]
+
+                if x_fim == x_ini:
+                    continue
+
+                for x in range(int(x_ini), int(x_fim) + 1):
+                    t = (x - x_ini) / (x_fim - x_ini)
+                    u = u_ini + t * (u_fim - u_ini)
+                    v = v_ini + t * (v_fim - v_ini)
+
+                    tx = int(u * (tex_w - 1))
+                    ty = int(v * (tex_h - 1))
+
+                    if 0 <= tx < tex_w and 0 <= ty < tex_h:
+                        cor = texture_img.get_at((tx, ty))
+                        set_pixel(surface, x, y, cor)

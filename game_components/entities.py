@@ -1,5 +1,8 @@
 from game_components.cards import Deck
 
+player_sprite = "assets/sprites/GLADIATOR.png"
+
+
 class Player:
     def __init__(self, hp, dmg_s, def_s, deck):
         self.HP = hp
@@ -7,6 +10,7 @@ class Player:
         self.DEF_S = def_s
         self.deck = Deck(deck)
         self.stack = []
+        self.state = "alive"
 
     def draw(self): ...
 
