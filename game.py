@@ -2,6 +2,7 @@ import random
 
 from game_components.entities import *
 from game_components.scenario import Scenario
+from game_components.hud import Hud
 from menu import Menu
 from game_components.boot_screen import draw_boot_screen
 
@@ -89,13 +90,13 @@ class Game:
         init_card_system()
 
         # 3. Adiciona o estado BOOT e o cronômetro
-        self.state = "PLAYING"
+        self.state = "MENU"
         self.boot_timer = 0.0
         self.boot_duration = 10.0  # Duração em segundos (ex: 3s)
         self.menu = Menu()
 
         self.is_debug_mode = True
-        self.player = Player(200, 10, 10, None)
+        self.player = Player(200, 10, 10)
         self.enemy = None
         self.hud = None
         self.scenario = Scenario(self.screen)
@@ -230,7 +231,10 @@ class Game:
         if self.player is None:
             return
 
-        # Não permite andar enquanto estiver executando uma carta
+        if self.player.is_dead:
+            self.player.update_animation(False, dt)
+            return
+
         if self.player.state == "playing":
             self.player.update_animation(False, dt)
             return
@@ -280,6 +284,8 @@ class Game:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.running = False
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.KMOD_CTRL:
 
                 # Pula a Boot Screen com qualquer tecla ou clique do mouse
                 elif self.state == "BOOT":
@@ -291,6 +297,8 @@ class Game:
                     action = self.menu.handle_event(event)
                     if action == "PLAYING":
                         self.state = "PLAYING"
+                        self.player.set_deck(self.generate_cards())
+                        self.hud = Hud(player=self.player, enemy=None)
                     elif action == "QUIT":
                         self.running = False
 
@@ -316,6 +324,7 @@ class Game:
                 self.scenario.draw(self.screen)
                 if self.player is not None:
                     self.player.draw(self.screen)
+                    self.hud.draw(self.screen)
 
             if self.is_debug_mode:
                 self.debug_mode()

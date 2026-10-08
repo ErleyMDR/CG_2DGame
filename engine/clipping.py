@@ -5,7 +5,7 @@ BOTTOM = 4
 TOP = 8
 
 
-def codigo_regiao(
+def bounds(
         x, y,
         xmin, ymin,
         xmax, ymax
@@ -36,13 +36,13 @@ def cohen_sutherland(
         xmax, ymax
 ):
 
-    c0 = codigo_regiao(
+    c0 = bounds(
         x0, y0,
         xmin, ymin,
         xmax, ymax
     )
 
-    c1 = codigo_regiao(
+    c1 = bounds(
         x1, y1,
         xmin, ymin,
         xmax, ymax
@@ -148,7 +148,7 @@ def cohen_sutherland(
             x0 = x
             y0 = y
 
-            c0 = codigo_regiao(
+            c0 = bounds(
                 x0, y0,
                 xmin, ymin,
                 xmax, ymax
@@ -159,35 +159,19 @@ def cohen_sutherland(
             x1 = x
             y1 = y
 
-            c1 = codigo_regiao(
+            c1 = bounds(
                 x1, y1,
                 xmin, ymin,
                 xmax, ymax
             )
 
 
-def desenhar_linha_recortada(
-        superficie,
-        x0, y0,
-        x1, y1,
-        janela,
-        cor
-):
-
-    xmin, ymin, xmax, ymax = janela
-
-    visivel, rx0, ry0, rx1, ry1 = cohen_sutherland(
-        x0, y0,
-        x1, y1,
-        xmin, ymin,
-        xmax, ymax
-    )
-
-    if visivel:
-
-        bresenham(
-            superficie,
-            rx0, ry0,
-            rx1, ry1,
-            cor
+def clipped_line(surface, p0, p1, window, color, width=1):
+    ok, x0, y0, x1, y1 = cohen_sutherland(*p0, *p1, *window)
+    if ok:
+        draw.Rasterizer.line(
+            surface,
+            (round(x0), round(y0)),
+            (round(x1), round(y1)),
+            color, width
         )

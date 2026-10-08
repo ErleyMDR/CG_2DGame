@@ -104,6 +104,22 @@ def scale_surface(
 
     return result
 
+def surface_bounds(surface: pg.Surface, min_alpha: int = 1) -> tuple[int, int, int, int]:
+    """Retorna (x, y, w, h) da região com alpha >= min_alpha."""
+    w, h = surface.get_size()
+    left, top, right, bottom = w, h, -1, -1
+
+    for y in range(h):
+        for x in range(w):
+            if surface.get_at((x, y)).a >= min_alpha:
+                if x < left: left = x
+                if x > right: right = x
+                if y < top: top = y
+                if y > bottom: bottom = y
+
+    return left, top, right - left + 1, bottom - top + 1
+
+
 def flip_surface_horizontal(surface: pg.Surface) -> pg.Surface:
     w, h = surface.get_size()
     result = pg.Surface((w, h), pg.SRCALPHA)
@@ -112,5 +128,42 @@ def flip_surface_horizontal(surface: pg.Surface) -> pg.Surface:
         for x in range(w):
             c = surface.get_at((w - 1 - x, y))
             set_pixel_alpha(result, x, y, (c.r, c.g, c.b, c.a))
+
+    return result
+
+def rotate_surface(surface: pg.Surface, theta: float, canvas: int) -> pg.Surface:
+    """
+    Rotaciona 'surface' em torno do seu centro por 'theta' radianos
+    (positivo = sentido horário na tela, pois Y cresce para baixo).
+    O resultado é uma Surface quadrada 'canvas' x 'canvas'.
+    """
+    src_w, src_h = surface.get_size()
+
+    scx, scy = (src_w - 1) / 2, (src_h - 1) / 2
+    dcx = dcy = (canvas - 1) / 2
+
+    # destino -> origem:  T(src_c) · R(-theta) · T(-dst_c)
+    m = mat_mult(
+        translation(scx, scy),
+        mat_mult(rotation(-theta), translation(-dcx, -dcy))
+    )
+
+    result = pg.Surface((canvas, canvas), pg.SRCALPHA)
+
+    # só percorre a caixa que o sprite rotacionado ocupa
+    c, s = abs(math.cos(theta)), abs(math.sin(theta))
+    half_w = (src_w * c + src_h * s) / 2 + 1
+    half_h = (src_w * s + src_h * c) / 2 + 1
+
+    for y in range(max(0, int(dcy - half_h)), min(canvas, int(dcy + half_h) + 2)):
+        for x in range(max(0, int(dcx - half_w)), min(canvas, int(dcx + half_w) + 2)):
+
+            sx = round(m[0][0] * x + m[0][1] * y + m[0][2])
+            sy = round(m[1][0] * x + m[1][1] * y + m[1][2])
+
+            if 0 <= sx < src_w and 0 <= sy < src_h:
+                p = surface.get_at((sx, sy))
+                if p.a > 0:
+                    set_pixel_alpha(result, x, y, (p.r, p.g, p.b, p.a))
 
     return result
