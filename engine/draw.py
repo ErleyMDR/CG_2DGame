@@ -152,7 +152,7 @@ class Rasterizer:
 class Painter:
 
     @staticmethod
-    def flood_fill(surface: pg.Surface, x: int, y: int, /, fill_color: tuple[int,int,int], boundary_color: tuple[int,int,int]) -> None:
+    def boundary_fill(surface: pg.Surface, x: int, y: int, /, fill_color: tuple[int,int,int], boundary_color: tuple[int,int,int]) -> None:
         height, width = surface.get_height(), surface.get_width()
 
         s = [(x, y)]

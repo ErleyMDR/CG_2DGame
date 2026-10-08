@@ -13,6 +13,7 @@ HEIGHT: int = 920
 CARD_FONT: str = "assets/font/PressStart2P-Regular.ttf"
 FONT: str = 'Serif'
 FONT_SIZE: int = 12
+MUSIC = "assets/sound/The_March_to_Gold.mp3"
 
 BLACK: tuple[int,int,int] = (0,0,0)
 WHITE: tuple[int,int,int] = (255,255,255)
@@ -223,6 +224,13 @@ class Game:
             dt
         )
 
+    def play_music(self):
+        pg.mixer.music.load(MUSIC)
+        pg.mixer.music.play(-1)
+
+    def stop_music(self):
+        pg.mixer.music.stop()
+
     def game_over(self):
         self.screen.blit(self.game_over_text, (WIDTH//2 - 100, HEIGHT//2))
 
@@ -262,6 +270,11 @@ class Game:
                         if self.player.deck is not None:
                             self.player.deck.next_card()
 
+                    elif self.state == "PLAYING" and event.key == pg.K_SPACE:
+                        if self.player.deck is not None:
+                            self.player.start_card()
+                            self.player.finish_action()
+
                 # Pula a Boot Screen com qualquer tecla ou clique do mouse
                 elif self.state == "BOOT":
                     if event.type in (pg.KEYDOWN, pg.MOUSEBUTTONDOWN):
@@ -275,6 +288,7 @@ class Game:
                         self.player.set_deck(self.generate_cards())
                         self.hud = Hud(player=self.player, enemy=None)
                         self.minimap.prepare(self.player)
+                        self.play_music()
 
                     elif action == "QUIT":
                         self.running = False
@@ -307,6 +321,7 @@ class Game:
                     if self.player.is_dead:
                         self.game_over()
                         self.counter_until_restart()
+                        self.stop_music()
 
             if self.is_debug_mode:
                 self.debug_mode()

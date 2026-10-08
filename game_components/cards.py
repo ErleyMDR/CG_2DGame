@@ -289,11 +289,17 @@ class Deck:
             self.current = self.current.prev_card
 
     def remove_current(self) -> None:
-        if self.total_cards > 1 and self.current:
+        if self.total_cards > 2 and self.current:
             next_node = self.current.next_card
             prev_node = self.current.prev_card
             next_node.prev_card = prev_node
             prev_node.next_card = next_node
+            self.current = next_node
+            self.total_cards -= 1
+        elif self.total_cards == 1:
+            next_node = self.current.next_card
+            next_node.prev_card = None
+            next_node.next_card = None
             self.current = next_node
             self.total_cards -= 1
         else:

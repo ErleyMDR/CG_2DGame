@@ -95,7 +95,7 @@ class Menu:
         controls_info = [
             "W, A, S, D - Mover Personagem",
             "Q - Move deck para esquerda",
-            "R - Move deck para direita"
+            "R - Move deck para direita",
             "ESPAÇO - Selecionar / Usar Carta"
         ]
 

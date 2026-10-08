@@ -82,7 +82,7 @@ O trabalho exige que a parte gráfica seja implementada manualmente. O Pygame é
 Foram implementados à mão:
 
 - **Primitivas:** retas (Bresenham e DDA), polígonos, círculos e elipses (algoritmos do ponto médio), retângulos e triângulos.
-- **Preenchimento:** `flood_fill`, `scanline_fill`, preenchimento com gradiente de cor (círculos, elipses e polígonos) e preenchimento com **textura** por interpolação de coordenadas UV (usado nas cartas).
+- **Preenchimento:** `boundary_fill`, `scanline_fill`, preenchimento com gradiente de cor (círculos, elipses e polígonos) e preenchimento com **textura** por interpolação de coordenadas UV (usado nas cartas).
 - **Recorte:** algoritmo de **Cohen-Sutherland** para recorte de retas.
 - **Transformações geométricas:** translação, escala, rotação e composição por matrizes 3×3 (coordenadas homogêneas), usadas na conversão mundo → viewport do minimapa e na rotação do personagem ao morrer.
 - **Transformações de imagem:** escala e espelhamento de sprites pixel a pixel.

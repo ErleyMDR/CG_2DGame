@@ -27,8 +27,8 @@ def draw_boot_screen(screen: pg.Surface) -> None:
     cos45 = math.cos(math.radians(45))
     sin45 = math.sin(math.radians(45))
 
-    dx = int(line_length * cos45)
-    dy = int(line_length * sin45)
+    dx = int(line_length * cos45) + 30
+    dy = int(line_length * sin45) + 30
 
     # Reta a 45° (diagonal principal)
     line1_start = (cx - dx, cy + dy)
@@ -45,7 +45,7 @@ def draw_boot_screen(screen: pg.Surface) -> None:
 
     # 4. Preenchimento azul com flood_fill dentro do círculo
     # O ponto inicial (cx + 10, cy) evita colidir com as linhas de 45°/135°
-    Painter.flood_fill(screen, cx + 10, cy, BLUE, WHITE)
+    Painter.boundary_fill(screen, cx + 10, cy, BLUE, WHITE)
 
     cg = font.render('CG', True, BLACK)
     screen.blit(cg, (cx - 40, cy - 38))
