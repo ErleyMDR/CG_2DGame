@@ -10,7 +10,7 @@ YELLOW = (215, 215, 40)
 RED = (200, 0, 0)
 
 def draw_boot_screen(screen: pg.Surface) -> None:
-    font = pg.font.SysFont('Arial', 40)
+    font = pg.font.SysFont('Arial', 60)
     cx = screen.get_width() // 2
     cy = screen.get_height() // 2
 
@@ -33,12 +33,12 @@ def draw_boot_screen(screen: pg.Surface) -> None:
     # Reta a 45° (diagonal principal)
     line1_start = (cx - dx, cy + dy)
     line1_end = (cx + dx, cy - dy)
-    Rasterizer.line(screen, line1_start, line1_end, RED)
+    Rasterizer.line(screen, line1_start, line1_end, RED, method='dda')
 
     # Reta a 135° (diagonal secundária)
     line2_start = (cx - dx, cy - dy)
     line2_end = (cx + dx, cy + dy)
-    Rasterizer.line(screen, line2_start, line2_end, RED)
+    Rasterizer.line(screen, line2_start, line2_end, RED, method='dda')
 
     # 3. Círculo delimitador (Desenhado DEPOIS das retas para selar a borda)
     Rasterizer.circle(screen, (cx, cy), circle_radius, WHITE)
@@ -48,4 +48,4 @@ def draw_boot_screen(screen: pg.Surface) -> None:
     Painter.flood_fill(screen, cx + 10, cy, BLUE, WHITE)
 
     cg = font.render('CG', True, BLACK)
-    screen.blit(cg, (cx - 20, cy - 18))
+    screen.blit(cg, (cx - 40, cy - 38))

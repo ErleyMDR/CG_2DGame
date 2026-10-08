@@ -1,11 +1,13 @@
 import engine.draw as draw
 import pygame as pg
 
+from engine.clipping import draw_clipped_line
+
 # =============================
 # DIMENSIONS
 # =============================
-DECK_FULL = (320, 310)                       # roda completa (geometria)
-DECK_SURFACE = (390, DECK_FULL[1] // 2 + 1)  # só a metade superior
+DECK_FULL = (320, 310)                          # roda completa (geometria)
+DECK_SURFACE = (DECK_FULL[0], DECK_FULL[1] // 2 + 1)   # só a metade superior
 HPBAR_SURFACE = (285, 40)
 ENEMYHPBAR_SURFACE = (380, 15)
 
@@ -47,10 +49,14 @@ class Hud:
         w, h = DECK_FULL
         cx, cy = w // 2, h // 2
         f = 40
-        bw = 2
 
-        s = pg.Surface(DECK_SURFACE, pg.SRCALPHA)   # transparente
+        s = pg.Surface(DECK_SURFACE, pg.SRCALPHA)
 
+        # Janela de recorte = a superfície inteira (a metade superior da roda).
+        # O diâmetro cy é a última linha visível.
+        window = (0, 0, s.get_width() - 1, s.get_height() - 1)
+
+        # Anel externo e círculo interno (o set_pixel descarta o que passa da base)
         draw.Rasterizer.ellipse(
             s, (cx, cy), cx - 10, cy - 10,
             color=GRAY_BORDER, border_width=5, fill=True,
@@ -60,19 +66,20 @@ class Hud:
             s, (cx, cy), (cy - 10) // 2,
             color=GRAY_BORDER, border_width=2, fill_color=GRAY_INTERIOR)
 
-        p1 = [
-            (cx - (cx // 2) - bw, f), (cx - (cx // 2) + bw, f),
-            (cx + (cx // 2) - bw, h - f), (cx + (cx // 2) + bw, h - f)
-        ]
-        p2 = [
-            (cx + (cx // 2) - bw, f), (cx + (cx // 2) + bw, f),
-            (cx - (cx // 2) - bw, h - f), (cx - (cx // 2) + bw, h - f)
-        ]
-        draw.Painter.scanline_fill(s, p1, color=GRAY_BORDER)
-        draw.Painter.scanline_fill(s, p2, color=GRAY_BORDER)
+        # Diagonais: pontos da roda COMPLETA. A metade de baixo passa de `cy`
+        # e é cortada pelo Cohen-Sutherland, sobrando só o "V" visível.
+        draw_clipped_line(
+            s, (cx - cx // 2, f), (cx + cx // 2, h - f),
+            window, GRAY_BORDER, width=4)
 
-        # diâmetro: fica na última linha da superfície (base da meia-roda)
-        draw.Rasterizer.line(s, (10, cy), (w - 10, cy), color=GRAY_BORDER)
+        draw_clipped_line(
+            s, (cx + cx // 2, f), (cx - cx // 2, h - f),
+            window, GRAY_BORDER, width=4)
+
+        # Diâmetro: fica exatamente na borda da janela (y = cy)
+        draw_clipped_line(
+            s, (10, cy), (w - 10, cy),
+            window, GRAY_BORDER)
 
         return s
 
@@ -119,7 +126,7 @@ class Hud:
         dw, dh = self.deck_bg.get_size()
 
         # meia-roda colada na base da tela, centralizada
-        x = (sw - dw) // 2 + 30
+        x = (sw - dw) // 2
         y = sh - dh
         screen.blit(self.deck_bg, (x, y))
 
@@ -131,4 +138,4 @@ class Hud:
             )
 
         screen.blit(self.player_hp, (80, sh - 80))
-        screen.blit(self.enemy_hp, (80, 80))
+        # screen.blit(self.enemy_hp, (80, 80))

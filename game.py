@@ -90,9 +90,9 @@ class Game:
         init_card_system()
 
         # 3. Adiciona o estado BOOT e o cronômetro
-        self.state = "MENU"
+        self.state = "BOOT"
         self.boot_timer = 0.0
-        self.boot_duration = 10.0  # Duração em segundos (ex: 3s)
+        self.boot_duration = 14.0  # Duração em segundos (ex: 3s)
         self.menu = Menu()
 
         self.is_debug_mode = True
@@ -105,6 +105,8 @@ class Game:
         self.enemy_active_card = None
 
         self.play_counter = 0
+
+        self.count_till_restart = 0
 
 
     def __repr__(self):
@@ -269,6 +271,16 @@ class Game:
             dt
         )
 
+    def game_over(self):
+        f = pg.font.SysFont("Arial", 50)
+        game_over = f.render("GAME OVER", True, BLACK)
+        self.screen.blit(game_over, (WIDTH//2 - 100, HEIGHT//2))
+
+    def counter_until_restart(self):
+        self.count_till_restart += 1
+        if self.count_till_restart > FPS * 6.5:
+            self.state = "MENU"
+
     def debug_mode(self):
         fps = int(self.clock.get_fps())
         fps_t = self.font.render(f'FPS: {fps}', True, WHITE)
@@ -285,7 +297,20 @@ class Game:
                 if event.type == pg.QUIT:
                     self.running = False
                 elif event.type == pg.KEYDOWN:
-                    if event.key == pg.KMOD_CTRL:
+                    if event.key == pg.K_d and pg.key.get_mods() & pg.KMOD_CTRL:
+                        print("DEBUG MODE OPENED")
+                        self.is_debug_mode = not self.is_debug_mode
+                    elif event.key == pg.K_f and pg.key.get_mods() & pg.KMOD_CTRL:
+                        self.player.HP = 0
+                        self.player.die()
+
+                    elif self.state == "PLAYING" and event.key == pg.K_q:
+                        if self.player.deck is not None:
+                            self.player.deck.prev_card()
+
+                    elif self.state == "PLAYING" and event.key == pg.K_e:
+                        if self.player.deck is not None:
+                            self.player.deck.next_card()
 
                 # Pula a Boot Screen com qualquer tecla ou clique do mouse
                 elif self.state == "BOOT":
@@ -325,6 +350,10 @@ class Game:
                 if self.player is not None:
                     self.player.draw(self.screen)
                     self.hud.draw(self.screen)
+
+                    if self.player.is_dead:
+                        self.game_over()
+                        self.counter_until_restart()
 
             if self.is_debug_mode:
                 self.debug_mode()

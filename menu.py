@@ -94,8 +94,9 @@ class Menu:
         info_font = pg.font.Font(CARD_FONT, 20)
         controls_info = [
             "W, A, S, D - Mover Personagem",
-            "ESPAÇO - Selecionar / Usar Carta",
-            "ESC - Voltar / Pausar"
+            "Q - Move deck para esquerda",
+            "R - Move deck para direita"
+            "ESPAÇO - Selecionar / Usar Carta"
         ]
 
         start_y = 280

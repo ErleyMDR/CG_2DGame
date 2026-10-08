@@ -1,4 +1,5 @@
 import math
+
 from engine.core import *
 
 SQRTOF3: float | int = math.sqrt(3)

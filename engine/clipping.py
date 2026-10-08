@@ -1,3 +1,5 @@
+from engine.core import draw_line
+
 INSIDE = 0
 LEFT = 1
 RIGHT = 2
@@ -166,12 +168,34 @@ def cohen_sutherland(
             )
 
 
-def clipped_line(surface, p0, p1, window, color, width=1):
-    ok, x0, y0, x1, y1 = cohen_sutherland(*p0, *p1, *window)
-    if ok:
-        draw.Rasterizer.line(
-            surface,
-            (round(x0), round(y0)),
-            (round(x1), round(y1)),
-            color, width
+def draw_clipped_line(surface, p0, p1, window, color, width=1):
+    """
+    Desenha o segmento p0->p1 recortado por `window` = (xmin, ymin, xmax, ymax).
+    Para width > 1, cada linha paralela é recortada separadamente, então o
+    corte fica rente à borda da janela.
+    """
+    x0, y0 = p0
+    x1, y1 = p1
+
+    steep = abs(y1 - y0) > abs(x1 - x0)
+
+    for i in range(width):
+        off = i - (width - 1) // 2
+
+        # Retas íngremes engrossam na horizontal, as demais na vertical.
+        # Deslocar sempre em pixels inteiros evita buracos entre as linhas.
+        ox, oy = (off, 0) if steep else (0, off)
+
+        ok, cx0, cy0, cx1, cy1 = cohen_sutherland(
+            x0 + ox, y0 + oy,
+            x1 + ox, y1 + oy,
+            *window
         )
+
+        if ok:
+            draw_line(
+                surface,
+                (round(cx0), round(cy0)),
+                (round(cx1), round(cy1)),
+                color
+            )

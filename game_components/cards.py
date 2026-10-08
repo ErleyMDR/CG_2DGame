@@ -4,7 +4,7 @@ from typing import override
 
 BLACK = (0, 0, 0)
 CARD_FONT_PATH: str = "assets/font/PressStart2P-Regular.ttf"
-CARD_FONT_SIZE: int = 14  # Ajustado para caber em CARD_SIZE (50, 100)
+CARD_FONT_SIZE: int = 12  # Ajustado para caber perfeitamente no meio círculo
 
 CARD_SIZE = (50, 100)
 TEXTURE_CUT = 20
@@ -114,11 +114,12 @@ class Card(ABC):
         return RASTERIZED_TEXTURES[self.__class__.__name__]["back"]
 
     def _build_card_surface(self, base_s: pg.Surface) -> pg.Surface:
-        """Gera a imagem final combinando a textura com o valor impresso."""
+        """Gera a imagem final combinando a textura com o valor impresso no meio círculo inferior."""
         s = base_s.copy()
         if card_font is not None:
             number = card_font.render(str(self.value), True, BLACK)
-            rect = number.get_rect(center=(CARD_SIZE[0] // 2, CARD_SIZE[1] // 2))
+            # Posiciona o número centralizado no meio círculo na base da carta
+            rect = number.get_rect(center=(CARD_SIZE[0] // 2, CARD_SIZE[1] - 14))
             s.blit(number, rect)
         return s
 
@@ -140,7 +141,6 @@ class Card(ABC):
     def cancel(self, owner): ...
 
     def draw(self, screen: pg.Surface, pos: tuple[int, int], view: str = "front") -> None:
-        # Apenas seleciona a superfície pré-renderizada e faz o blit direto
         s = self.get_rendered_front() if view == "front" else self.get_rendered_back()
         screen.blit(s, pos)
 
@@ -267,7 +267,8 @@ def _construct_circular_list(cards: list[Card]) -> DeckNode:
 
 
 class Deck:
-    CARD_SPACING = 60
+    CARD_SPACING = 75  # Aumentado para dar mais espaçamento entre as cartas
+    ELEVATION = 20     # Altura em pixels que a carta selecionada fica suspensa
 
     def __init__(self, cards: list[Card]) -> None:
         self.cards = cards
@@ -307,15 +308,17 @@ class Deck:
         half_w = CARD_SIZE[0] // 2
         half_h = CARD_SIZE[1] // 2
 
+        # A carta atual (do meio) é desenhada subtraindo self.ELEVATION no eixo Y
         positions = [
             (cx - self.CARD_SPACING - half_w, cy - half_h),
-            (cx - half_w, cy - half_h),
+            (cx - half_w, cy - half_h - self.ELEVATION),
             (cx + self.CARD_SPACING - half_w, cy - half_h)
         ]
 
         if self.current.prev_card:
             self.current.prev_card.card.draw(screen, positions[0])
 
+        # Renderiza a carta ativa no centro com elevação
         self.current.card.draw(screen, positions[1])
 
         if self.current.next_card:
