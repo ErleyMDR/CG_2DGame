@@ -1,23 +1,25 @@
 import pygame
 import math
-
+from pygame import surface
 from engine.draw import Rasterizer
 
 
 class Scenario:
-    def __init__(self, s):
+    def __init__(self):
         self.sky_color = (25, 30, 50)
         self.ground_color = (60, 70, 60)
-        self.screen = self._rasterize(s)
+        self.cached_surface = None
 
-    def draw(self, surf):
-        surf.blit(self.screen, (0, 0))
+    def draw(self, surface):
+        if self.cached_surface is None:
+            self.cached_surface = pygame.Surface(surface.get_size())
+            self.draw_static(self.cached_surface)
 
-    def _rasterize(self, screen):
-        width = screen.get_width()
-        height = screen.get_height()
-        surface = pygame.Surface((width, height))
+        surface.blit(self.cached_surface, (0, 0))
 
+    def draw_static(self, surface):
+        width = surface.get_width()
+        height = surface.get_height()
         center_x = width // 2
 
         # Fundo
@@ -465,29 +467,6 @@ class Scenario:
                 fill=True
             )
 
-    # ==========================================
-    # Pontos luminosos girando ao redor da luz
-    # ==========================================
-
-            orbit_radius = 12
-
-            for i in range(6):
-
-            # 3 pontos separados por 120 graus
-                angle = light_time * 2 + i * (2 * math.pi / 6)
-
-                orbit_x = x + math.cos(angle) * orbit_radius
-                orbit_y = light_y + math.sin(angle) * orbit_radius
-
-                Rasterizer.circle(
-                    surface,
-                    center=(int(orbit_x), int(orbit_y)),
-                    radius=2,
-                    color=(255, 210, 100),
-                    fill=True,
-                    fill_color=(255, 210, 100)
-            )
-
     
         # Entrada central da arenagame
         door_center_x = width // 2
@@ -535,5 +514,3 @@ class Scenario:
             fill=True,
             fill_color=(65, 65, 85)
         )
-
-        return surface
