@@ -1,17 +1,23 @@
 import pygame
 import math
-from pygame import surface
+
 from engine.draw import Rasterizer
 
 
 class Scenario:
-    def __init__(self):
+    def __init__(self, s):
         self.sky_color = (25, 30, 50)
         self.ground_color = (60, 70, 60)
+        self.screen = self._rasterize(s)
 
-    def draw(self, surface):
-        width = surface.get_width()
-        height = surface.get_height()
+    def draw(self, surf):
+        surf.blit(self.screen, (0, 0))
+
+    def _rasterize(self, screen):
+        width = screen.get_width()
+        height = screen.get_height()
+        surface = pygame.Surface((width, height))
+
         center_x = width // 2
 
         # Fundo
@@ -529,3 +535,5 @@ class Scenario:
             fill=True,
             fill_color=(65, 65, 85)
         )
+
+        return surface

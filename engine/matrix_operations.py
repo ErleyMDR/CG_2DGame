@@ -103,3 +103,14 @@ def scale_surface(
                 )
 
     return result
+
+def flip_surface_horizontal(surface: pg.Surface) -> pg.Surface:
+    w, h = surface.get_size()
+    result = pg.Surface((w, h), pg.SRCALPHA)
+
+    for y in range(h):
+        for x in range(w):
+            c = surface.get_at((w - 1 - x, y))
+            set_pixel_alpha(result, x, y, (c.r, c.g, c.b, c.a))
+
+    return result

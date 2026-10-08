@@ -2,102 +2,77 @@ import math
 import pygame as pg
 
 from game_components.cards import Deck, ActiveCard, Card
-from engine.matrix_operations import scale_surface
+from engine.matrix_operations import scale_surface, flip_surface_horizontal
 
 PLAYER_SPRITE = "assets/sprites/GLADIATOR.png"
 PLAYER_WALK_SPRITESHEET = "assets/sprites/GLADIATOR_WALK.png"
 
-PLAYER_SIZE = (250, 335)
+PLAYER_SIZE = (102, 150)
 
 WALK_ROWS = 2
 WALK_COLUMNS = 1
-WALK_ANIMATION_TIME = 0.12
+WALK_ANIMATION_TIME = 0.15
 
 
-def _load_sprite(
-        path: str,
-        size: tuple[int, int]
+def _crop_and_scale_to_height(
+        surface: pg.Surface,
+        rect: pg.Rect,
+        height: int
 ) -> pg.Surface:
+
+    cropped = surface.subsurface(rect).copy()
+
+    width = max(1, round(rect.width * height / rect.height))
+
+    return scale_surface(cropped, (width, height))
+
+
+def _load_sprite(path: str, height: int) -> pg.Surface:
 
     sprite = pg.image.load(path).convert_alpha()
 
-    return scale_surface(
-        sprite,
-        size
-    )
+    rect = sprite.get_bounding_rect(min_alpha=1)
+
+    return _crop_and_scale_to_height(sprite, rect, height)
+
 
 def _load_walk_spritesheet(
         path: str,
         rows: int,
         columns: int,
-        size: tuple[int, int]
+        height: int
 ) -> list[pg.Surface]:
 
     sheet = pg.image.load(path).convert_alpha()
 
-    sheet_width = sheet.get_width()
-    sheet_height = sheet.get_height()
-
-    frame_width = sheet_width // columns
-    frame_height = sheet_height // rows
+    frame_width = sheet.get_width() // columns
+    frame_height = sheet.get_height() // rows
 
     frames = []
 
-    # ==========================================
-    # 1. CORTA A SPRITESHEET EM FRAMES
-    # ==========================================
-
     for row in range(rows):
         for column in range(columns):
-
             frame_rect = pg.Rect(
                 column * frame_width,
                 row * frame_height,
                 frame_width,
                 frame_height
             )
+            frames.append(sheet.subsurface(frame_rect).copy())
 
-            frame = sheet.subsurface(frame_rect).copy()
-            frames.append(frame)
-
-    # ==========================================
-    # 2. ENCONTRA UMA ÁREA COMUM A TODOS OS FRAMES
-    # ==========================================
-
-    bounds = [
-        frame.get_bounding_rect(min_alpha=1)
-        for frame in frames
-    ]
-
-    left = min(rect.left for rect in bounds)
-    top = min(rect.top for rect in bounds)
-    right = max(rect.right for rect in bounds)
-    bottom = max(rect.bottom for rect in bounds)
+    bounds = [f.get_bounding_rect(min_alpha=1) for f in frames]
 
     common_rect = pg.Rect(
-        left,
-        top,
-        right - left,
-        bottom - top
+        min(r.left for r in bounds),
+        min(r.top for r in bounds),
+        max(r.right for r in bounds) - min(r.left for r in bounds),
+        max(r.bottom for r in bounds) - min(r.top for r in bounds)
     )
 
-    # ==========================================
-    # 3. CORTA TODOS OS FRAMES COM A MESMA ÁREA
-    # ==========================================
-
-    cropped_frames = []
-
-    for frame in frames:
-        cropped = frame.subsurface(common_rect).copy()
-
-        scaled = pg.transform.scale(
-            cropped,
-            size
-        )
-
-        cropped_frames.append(scaled)
-
-    return cropped_frames
+    return [
+        _crop_and_scale_to_height(frame, common_rect, height)
+        for frame in frames
+    ]
 
 class Player:
 
@@ -107,7 +82,7 @@ class Player:
         self.DMG_S = dmg_s
         self.DEF_S = def_s
 
-        self.deck = Deck(deck)
+        self.deck = Deck(deck) if deck is not None else None
         self.stack = []
 
         self.state = "idle"
@@ -117,33 +92,31 @@ class Player:
         # MOVIMENTO
         # ==========================================
 
-        self.position = [900.0, 700.0]
+        self.position = [500.0, 700.0]
         self.speed = 300.0
 
         # ==========================================
-        # SPRITES
+        # SPRITES & ANIMAÇÃO
         # ==========================================
+        self.facing_left = False
 
-        self.idle_sprite = _load_sprite(
-            PLAYER_SPRITE,
-            PLAYER_SIZE
-        )
-
-        self.walk_frames = _load_walk_spritesheet(
+        self.idle_right = _load_sprite(PLAYER_SPRITE, PLAYER_SIZE[1])
+        self.walk_right = _load_walk_spritesheet(
             PLAYER_WALK_SPRITESHEET,
             WALK_ROWS,
             WALK_COLUMNS,
-            PLAYER_SIZE
+            PLAYER_SIZE[1]
         )
 
-        # ==========================================
-        # ANIMAÇÃO
-        # ==========================================
+        # versões espelhadas, calculadas uma única vez
+        self.idle_left = flip_surface_horizontal(self.idle_right)
+        self.walk_left = [
+            flip_surface_horizontal(f) for f in self.walk_right
+        ]
 
         self.current_frame = 0
         self.animation_timer = 0.0
-
-        self.sprite = self.idle_sprite
+        self.sprite = self.idle_right
 
     def move(
             self,
@@ -158,35 +131,31 @@ class Player:
             dx /= magnitude
             dy /= magnitude
 
+        if dx < 0:
+            self.facing_left = True
+        elif dx > 0:
+            self.facing_left = False
+
         self.position[0] += dx * self.speed * dt
         self.position[1] += dy * self.speed * dt
 
-    def update_animation(
-            self,
-            moving: bool,
-            dt: float
-    ) -> None:
+    def update_animation(self, moving: bool, dt: float) -> None:
+        idle = self.idle_left if self.facing_left else self.idle_right
+        walk = self.walk_left if self.facing_left else self.walk_right
 
         if not moving:
-
             self.current_frame = 0
             self.animation_timer = 0.0
-            self.sprite = self.idle_sprite
-
+            self.sprite = idle
             return
 
         self.animation_timer += dt
 
         if self.animation_timer >= WALK_ANIMATION_TIME:
-
             self.animation_timer -= WALK_ANIMATION_TIME
+            self.current_frame = (self.current_frame + 1) % len(walk)
 
-            self.current_frame += 1
-
-            if self.current_frame >= len(self.walk_frames):
-                self.current_frame = 0
-
-        self.sprite = self.walk_frames[self.current_frame]
+        self.sprite = walk[self.current_frame]
 
     def draw(self, screen: pg.Surface) -> None:
 

@@ -1,6 +1,7 @@
 import random
 
 from game_components.entities import *
+from game_components.scenario import Scenario
 from menu import Menu
 from game_components.boot_screen import draw_boot_screen
 
@@ -20,41 +21,41 @@ YELLOW: tuple[int,int,int] = (215, 215, 40)
 
 card_values: list[int] = [0,1,2,3,4,5,6,7,8,9]
 
-cx = WIDTH // 2
-cy = HEIGHT // 2
+# cx = WIDTH // 2
+# cy = HEIGHT // 2
+#
+# w = 372
+# h = 670
+#
+# cut = 20
+#
+# card_p = [
+#     (cx - w//2 + cut, cy - h//2),  # superior-esquerdo
+#     (cx + w//2 - cut, cy - h//2),  # superior-direito
+#
+#     (cx + w//2,       cy - h//2 + cut),  # direita-superior
+#     (cx + w//2,       cy + h//2 - cut),  # direita-inferior
+#
+#     (cx + w//2 - cut, cy + h//2),  # inferior-direito
+#     (cx - w//2 + cut, cy + h//2),  # inferior-esquerdo
+#
+#     (cx - w//2,       cy + h//2 - cut),  # esquerda-inferior
+#     (cx - w//2,       cy - h//2 + cut),  # esquerda-superior
+# ]
 
-w = 372
-h = 670
-
-cut = 20
-
-card_p = [
-    (cx - w//2 + cut, cy - h//2),  # superior-esquerdo
-    (cx + w//2 - cut, cy - h//2),  # superior-direito
-
-    (cx + w//2,       cy - h//2 + cut),  # direita-superior
-    (cx + w//2,       cy + h//2 - cut),  # direita-inferior
-
-    (cx + w//2 - cut, cy + h//2),  # inferior-direito
-    (cx - w//2 + cut, cy + h//2),  # inferior-esquerdo
-
-    (cx - w//2,       cy + h//2 - cut),  # esquerda-inferior
-    (cx - w//2,       cy - h//2 + cut),  # esquerda-superior
-]
-
-uvs = [
-    (cut / w,       0.01),             # superior-esquerdo
-    ((w - cut) / w, 0.01),             # superior-direito
-
-    (0.99,            cut / h),        # direita-superior
-    (0.99,            (h - cut) / h),  # direita-inferior
-
-    ((w - cut) / w, 0.99),             # inferior-direito
-    (cut / w,       0.99),              # inferior-esquerdo
-
-    (0.01,            (h - cut) / h),  # esquerda-inferior
-    (0.01,            cut / h),         # esquerda-superior
-]
+# uvs = [
+#     (cut / w,       0.01),             # superior-esquerdo
+#     ((w - cut) / w, 0.01),             # superior-direito
+#
+#     (0.99,            cut / h),        # direita-superior
+#     (0.99,            (h - cut) / h),  # direita-inferior
+#
+#     ((w - cut) / w, 0.99),             # inferior-direito
+#     (cut / w,       0.99),              # inferior-esquerdo
+#
+#     (0.01,            (h - cut) / h),  # esquerda-inferior
+#     (0.01,            cut / h),         # esquerda-superior
+# ]
 
 # uvs = [
 #     (0.0941, 0.0),
@@ -88,15 +89,16 @@ class Game:
         init_card_system()
 
         # 3. Adiciona o estado BOOT e o cronômetro
-        self.state = "BOOT"
+        self.state = "PLAYING"
         self.boot_timer = 0.0
         self.boot_duration = 10.0  # Duração em segundos (ex: 3s)
         self.menu = Menu()
 
         self.is_debug_mode = True
-        self.player = None
+        self.player = Player(200, 10, 10, None)
         self.enemy = None
         self.hud = None
+        self.scenario = Scenario(self.screen)
 
         self.player_active_card = None
         self.enemy_active_card = None
@@ -311,6 +313,7 @@ class Game:
                 self.menu.show(self.screen)
 
             elif self.state == "PLAYING":
+                self.scenario.draw(self.screen)
                 if self.player is not None:
                     self.player.draw(self.screen)
 
