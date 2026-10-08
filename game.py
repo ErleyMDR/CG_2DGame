@@ -58,6 +58,7 @@ class Game:
         self.play_counter = 0
 
         self.count_till_restart = 0
+        self.game_over_text = pg.font.SysFont("Arial", 50).render("GAME OVER", True, BLACK)
 
 
     def __repr__(self):
@@ -223,9 +224,7 @@ class Game:
         )
 
     def game_over(self):
-        f = pg.font.SysFont("Arial", 50)
-        game_over = f.render("GAME OVER", True, BLACK)
-        self.screen.blit(game_over, (WIDTH//2 - 100, HEIGHT//2))
+        self.screen.blit(self.game_over_text, (WIDTH//2 - 100, HEIGHT//2))
 
     def counter_until_restart(self):
         self.count_till_restart += 1
@@ -275,6 +274,8 @@ class Game:
                         self.state = "PLAYING"
                         self.player.set_deck(self.generate_cards())
                         self.hud = Hud(player=self.player, enemy=None)
+                        self.minimap.prepare(self.player)
+
                     elif action == "QUIT":
                         self.running = False
 
