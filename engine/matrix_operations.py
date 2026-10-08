@@ -1,5 +1,8 @@
 import math
 
+from engine.core import set_pixel_alpha
+from engine.draw import pg
+
 def eye():
     return [
         [1, 0, 0],
@@ -41,9 +44,7 @@ def mat_mult(a, b):
 
 
 def aplica_transformacao(m, pontos):
-
     novos = []
-
     for x, y in pontos:
 
         v = [x, y, 1]
@@ -65,3 +66,40 @@ def aplica_transformacao(m, pontos):
         )
 
     return novos
+
+def scale_surface(
+        surface: pg.Surface,
+        size: tuple[int, int]
+) -> pg.Surface:
+
+    dst_w, dst_h = size
+    src_w, src_h = surface.get_size()
+
+    result = pg.Surface(
+        (dst_w, dst_h),
+        pg.SRCALPHA
+    )
+
+    sx = src_w / dst_w
+    sy = src_h / dst_h
+
+    for y in range(dst_h):
+        for x in range(dst_w):
+
+            src_x = round(x * sx)
+            src_y = round(y * sy)
+
+            if (
+                    0 <= src_x < src_w
+                    and 0 <= src_y < src_h
+            ):
+                c = surface.get_at((src_x, src_y))
+
+                set_pixel_alpha(
+                    result,
+                    x,
+                    y,
+                    (c.r, c.g, c.b, c.a)
+                )
+
+    return result

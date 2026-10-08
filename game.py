@@ -1,11 +1,8 @@
-import pygame as pg
 import random
 
-from engine import draw
-from game_components.cards import Card, AttackCard, MagicCard, DefenseCard
-from game_components.hud import Hud
 from game_components.entities import *
 from menu import Menu
+from game_components.boot_screen import draw_boot_screen
 
 FPS: int = 60
 WIDTH: int = 1820
@@ -73,18 +70,27 @@ uvs = [
 #     (0.0,    0.0522),
 # ]
 
+from game_components.cards import (
+    Card, AttackCard, MagicCard, DefenseCard, ActiveCard,
+    init_card_system
+)
+
 class Game:
     def __init__(self):
-        # pygame setup
+        # 1. Cria a janela do Pygame
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         self.clock = pg.time.Clock()
         self.running = True
         self.font = pg.font.SysFont(FONT, FONT_SIZE)
         pg.display.set_caption(self.__repr__())
 
-        # Estado do Jogo
-        self.state = "TEST"
+        # 2. Inicializa o sistema de texturas de cartas APÓS a janela existir
+        init_card_system()
 
+        # 3. Adiciona o estado BOOT e o cronômetro
+        self.state = "BOOT"
+        self.boot_timer = 0.0
+        self.boot_duration = 10.0  # Duração em segundos (ex: 3s)
         self.menu = Menu()
 
         self.is_debug_mode = True
@@ -200,59 +206,117 @@ class Game:
         # Executa o efeito
         self.activate_card(card, self.player)
 
-    def decide_winner(self):
-        ...
+    def activate_card(self, card, player):
+        pass
+
+    def cancel_card_effect(self, card):
+        pass
+
+    def break_card(self, card: Card):
+        card.active = False
+
+        # Cancela o efeito que estava ativo
+        self.cancel_card_effect(card)
+
+        if card is self.player_active_card:
+            self.player_active_card = None
+
+        elif card is self.enemy_active_card:
+            self.enemy_active_card = None
+
+    def update_player(self, dt: float) -> None:
+        if self.player is None:
+            return
+
+        # Não permite andar enquanto estiver executando uma carta
+        if self.player.state == "playing":
+            self.player.update_animation(False, dt)
+            return
+
+        keys = pg.key.get_pressed()
+
+        dx = 0
+        dy = 0
+
+        if keys[pg.K_w]:
+            dy -= 1
+
+        if keys[pg.K_s]:
+            dy += 1
+
+        if keys[pg.K_a]:
+            dx -= 1
+
+        if keys[pg.K_d]:
+            dx += 1
+
+        moving = dx != 0 or dy != 0
+
+        self.player.move(
+            dx,
+            dy,
+            dt
+        )
+
+        self.player.update_animation(
+            moving,
+            dt
+        )
 
     def debug_mode(self):
         fps = int(self.clock.get_fps())
         fps_t = self.font.render(f'FPS: {fps}', True, WHITE)
         t_pos = (10, 10)
         self.screen.blit(fps_t, t_pos)
-        # Meant to highlight debug stats
-        # sp = (t_pos[0] - 4, t_pos[1] + fps_t.height)
-        # ep = (t_pos[0] + 4 + fps_t.width, t_pos[1] + fps_t.height)
-        # draw.line(self.screen, color=YELLOW, start_point=sp, end_point=ep)
+
 
     def run(self):
         while self.running:
+            dt = self.clock.tick(FPS) / 1000.0
 
-            # self.screen.fill(BLACK)
-
-            if self.state == "MENU":
-                self.menu.show(self.screen)
-
-            elif self.state == "PLAYING":
-                # if self.player
-                pass
-
-            elif self.state == "GAME_OVER":
-                pass
-
-            elif self.state == "CONTROLS":
-                pass
-
-            # poll for events
-            # pygame.QUIT event means the user clicked X to close your window
+            # EVENTOS
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.running = False
-                elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_d and pg.key.get_mods() & pg.KMOD_CTRL:
-                        print("DEBUG MODE OPENED")
-                        self.is_debug_mode = not self.is_debug_mode
 
-            # fill the screen with a color to wipe away anything from last frame
+                # Pula a Boot Screen com qualquer tecla ou clique do mouse
+                elif self.state == "BOOT":
+                    if event.type in (pg.KEYDOWN, pg.MOUSEBUTTONDOWN):
+                        self.state = "MENU"
 
-            # RENDER YOUR GAME HERE
-            # self.hud.draw(self.screen)
+                # REPASSA EVENTOS PARA O MENU QUANDO ESTIVER NO ESTADO "MENU"
+                elif self.state == "MENU":
+                    action = self.menu.handle_event(event)
+                    if action == "PLAYING":
+                        self.state = "PLAYING"
+                    elif action == "QUIT":
+                        self.running = False
 
+            # UPDATE
+            if self.state == "BOOT":
+                self.boot_timer += dt
+                if self.boot_timer >= self.boot_duration:
+                    self.state = "MENU"
 
-            # Calls debug_mode() if active
-            if self.is_debug_mode: self.debug_mode()
+            elif self.state == "PLAYING":
+                self.update_player(dt)
 
-            # flip() the display to put your work on screen
+            # LIMPEZA E RENDERIZAÇÃO
+            self.screen.fill(BLACK)
+
+            if self.state == "BOOT":
+                draw_boot_screen(self.screen)
+
+            elif self.state == "MENU":
+                self.menu.show(self.screen)
+
+            elif self.state == "PLAYING":
+                if self.player is not None:
+                    self.player.draw(self.screen)
+
+            if self.is_debug_mode:
+                self.debug_mode()
+
             pg.display.flip()
-
-            self.clock.tick(FPS)  # limits FPS to 60
 
         pg.quit()

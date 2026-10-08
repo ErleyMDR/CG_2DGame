@@ -10,6 +10,13 @@ def set_pixel(surface: pg.Surface, x: int, y: int, cor: tuple[int,int,int]) -> N
     if 0 <= x < surface.get_width() and 0 <= y < surface.get_height():
         surface.set_at((x, y), cor)
 
+def set_pixel_alpha(surface: pg.Surface, x: int, y: int, cor: tuple[int,int,int,int]) -> None:
+    x = int(x)
+    y = int(y)
+
+    if 0 <= x < surface.get_width() and 0 <= y < surface.get_height():
+        surface.set_at((x, y), cor)
+
 def get_pixel(surface: pg.Surface, x: int, y: int) -> tuple[int, int, int] | None:
     x = int(x)
     y = int(y)
