@@ -2,6 +2,7 @@ import random
 
 from game_components.entities import *
 from game_components.scenario import Scenario
+from game_components.minimap import Minimap
 from game_components.hud import Hud
 from menu import Menu
 from game_components.boot_screen import draw_boot_screen
@@ -99,8 +100,8 @@ class Game:
         self.player = Player(200, 10, 10)
         self.enemy = None
         self.hud = None
-        self.scenario = Scenario(self.screen)
-
+        self.scenario = Scenario()
+        self.minimap = Minimap()
         self.player_active_card = None
         self.enemy_active_card = None
 
@@ -350,6 +351,7 @@ class Game:
                 if self.player is not None:
                     self.player.draw(self.screen)
                     self.hud.draw(self.screen)
+                    self.minimap.draw(self.screen, self.player)
 
                     if self.player.is_dead:
                         self.game_over()
