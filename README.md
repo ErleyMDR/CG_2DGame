@@ -4,6 +4,8 @@ Jogo 2D criado para avaliação da cadeira de **Computação Gráfica**.
 
 O RTCB é um jogo de combate em tempo real em que o jogador controla um gladiador numa arena e usa um baralho de cartas para atacar, lançar magias e se defender. Diferente de um jogo de cartas por turnos, aqui as ações acontecem ao mesmo tempo e uma jogada pode ser interrompida pela resposta do adversário.
 
+Link para vídeo da execução: <https://drive.google.com/file/d/1BGX39ofw8ufHUC_TGd073rQM3X3N1HNx/view?usp=sharing>
+
 ---
 
 ## Mecânicas
